@@ -58,6 +58,7 @@
     )
 
     (var-set next-paper-id (+ paper-id u1))
+    (print {event: "paper-submitted", paper-id: paper-id, author: author, timestamp: block-height})
     (ok paper-id)
   )
 )
@@ -78,10 +79,14 @@
     (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
     (asserts! (or (is-eq new-status "accepted") (is-eq new-status "rejected") (is-eq new-status "in-review")) ERR_INVALID_STATUS)
 
-    (match (map-get? papers paper-id)
-      paper (ok (map-set papers
-                  paper-id
-                  (merge paper { status: new-status })))
+   (match (map-get? papers paper-id)
+      paper 
+        (begin
+          (map-set papers paper-id (merge paper { status: new-status }))
+          ;; Emit status update event
+          (print {event: "paper-status-updated", paper-id: paper-id, old-status: (get status paper), new-status: new-status})
+          (ok paper-id)
+        )
       ERR_PAPER_NOT_FOUND
     )
   )
